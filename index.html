@@ -6,126 +6,204 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="График">
-<meta name="theme-color" content="#007aff">
-<title>График</title>
+<meta name="theme-color" content="#f2f2f7">
+<title>Мой график</title>
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007aff'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white'>💰</text></svg>">
 <style>
-  * { -webkit-tap-highlight-color: transparent; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
   body {
     font-family: -apple-system, system-ui, sans-serif;
-    max-width: 600px; margin: 0 auto; padding: 16px 12px 60px;
-    background: #f2f2f7; color: #000;
-    padding-top: calc(16px + env(safe-area-inset-top));
+    margin: 0; padding: 0; background: #f2f2f7; color: #000;
+    padding-bottom: 100px;
   }
-  h1 { font-size: 24px; margin: 8px 0 16px; }
-  h2 { font-size: 17px; margin: 0 0 10px; color: #666; font-weight: 500; }
-  .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-  label { display: block; font-size: 14px; margin: 10px 0 4px; color: #666; }
-  input { width: 100%; padding: 11px; font-size: 17px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background: #fafafa; }
-  button { margin-top: 12px; padding: 13px 16px; font-size: 17px; border: none; border-radius: 10px; background: #007aff; color: #fff; font-weight: 500; width: 100%; }
-  button:active { background: #0062cc; }
+  
+  /* Верхняя панель */
+  .header {
+    background: #fff; padding: 12px 16px; position: sticky; top: 0; z-index: 10;
+    border-bottom: 1px solid #e5e5ea; padding-top: calc(12px + env(safe-area-inset-top));
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .rate-btn { font-size: 14px; color: #007aff; background: none; border: none; padding: 8px; font-weight: 500;}
+
+  /* Навигация по месяцам */
+  .month-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px; background: #fff; margin-bottom: 12px;
+    border-bottom: 1px solid #e5e5ea;
+  }
+  .month-nav button {
+    background: #f2f2f7; border: none; border-radius: 50%; width: 36px; height: 36px;
+    font-size: 18px; color: #007aff; display: flex; justify-content: center; align-items: center;
+  }
+  .month-title { font-size: 20px; font-weight: 600; }
+
+  /* Итоги */
+  .summary { display: flex; padding: 0 16px; gap: 12px; margin-bottom: 16px; }
+  .summary-card {
+    flex: 1; background: #fff; border-radius: 14px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05); text-align: center;
+  }
+  .summary-card .label { font-size: 13px; color: #8e8e93; margin-bottom: 4px; font-weight: 500; text-transform: uppercase;}
+  .summary-card .value { font-size: 22px; font-weight: 600; }
+  .summary-card .value.money { color: #34c759; }
+
+  /* Список смен */
+  .shifts-list { padding: 0 16px; }
+  .shift-item {
+    background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .shift-date { font-weight: 600; font-size: 16px; margin-bottom: 2px; }
+  .shift-time { font-size: 14px; color: #8e8e93; }
+  .shift-right { text-align: right; }
+  .shift-hours { font-weight: 500; font-size: 15px; margin-bottom: 2px; }
+  .shift-money { color: #34c759; font-weight: 600; font-size: 15px; }
+  .del-btn {
+    background: #ff3b30; color: #fff; border: none; border-radius: 8px;
+    padding: 6px 10px; font-size: 12px; margin-top: 6px;
+  }
+  .empty { text-align: center; color: #8e8e93; padding: 40px 20px; font-size: 15px; }
+
+  /* Плавающая кнопка Добавить */
+  .fab {
+    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%);
+    background: #007aff; color: #fff; border: none; border-radius: 30px;
+    padding: 14px 24px; font-size: 17px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,122,255,.3);
+    display: flex; align-items: center; gap: 8px; z-index: 20;
+  }
+  .fab:active { background: #0062cc; }
+
+  /* Модальное окно */
+  .modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); z-index: 30; align-items: flex-end;
+  }
+  .modal.active { display: flex; }
+  .modal-content {
+    background: #f2f2f7; width: 100%; border-radius: 20px 20px 0 0;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    animation: slideUp 0.2s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .modal-header h2 { margin: 0; font-size: 20px; }
+  .close-btn { background: none; border: none; color: #007aff; font-size: 17px; font-weight: 500; padding: 0; }
+  
+  label { display: block; font-size: 13px; color: #8e8e93; margin: 12px 0 4px; font-weight: 500; }
+  input { width: 100%; padding: 12px; font-size: 17px; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
   .row { display: flex; gap: 10px; }
   .row > div { flex: 1; }
-  .big { font-size: 22px; font-weight: 600; color: #007aff; }
-  .big.money { color: #34c759; }
-  .month-head { display: flex; justify-content: space-between; align-items: baseline; background: #eef6ff; padding: 10px 12px; border-radius: 8px; margin: 14px 0 4px; font-weight: 500; font-size: 15px; }
-  .month-head .money { color: #34c759; }
-  .shift { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; }
-  .shift:last-child { border-bottom: none; }
-  .shift small { color: #888; display: block; font-size: 12px; margin-top: 2px; }
-  .shift .right { text-align: right; }
-  .shift .money { color: #34c759; font-weight: 500; }
-  .del { background: #ff3b30; color: #fff; border: none; border-radius: 8px; padding: 6px 10px; font-size: 12px; width: auto; margin: 4px 0 0; }
-  .hint { font-size: 13px; color: #888; margin-top: 8px; }
-  .rate-row { display: flex; gap: 10px; align-items: flex-end; }
-  .rate-row > div:first-child { flex: 2; }
-  .rate-row > div:last-child { flex: 1; }
+  .btn-save { margin-top: 20px; background: #007aff; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 17px; font-weight: 600; width: 100%; }
+  .preview { font-size: 14px; color: #8e8e93; margin-top: 12px; text-align: center; }
 </style>
 </head>
 <body>
 
-<h1>📅 Мой график</h1>
+<div class="header">
+  <h1>📅 График</h1>
+  <button class="rate-btn" onclick="changeRate()">Ставка: <span id="rateDisplay">276</span> ₽/ч</button>
+</div>
 
-<!-- СТАВКА -->
-<div class="card">
-  <h2>💵 Ставка</h2>
-  <div class="rate-row">
-    <div>
-      <label>Цена часа (₽)</label>
-      <input type="number" id="rate" value="276" min="0" step="1">
-    </div>
-    <div>
-      <label>&nbsp;</label>
-      <button onclick="saveRate()" style="margin-top:0">Сохранить</button>
-    </div>
+<!-- Навигация по месяцам -->
+<div class="month-nav">
+  <button onclick="changeMonth(-1)">←</button>
+  <div class="month-title" id="monthTitle">Ноябрь 2026</div>
+  <button onclick="changeMonth(1)">→</button>
+</div>
+
+<!-- Итоги за выбранный месяц -->
+<div class="summary">
+  <div class="summary-card">
+    <div class="label">Часов</div>
+    <div class="value" id="monthHours">0</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Заработано</div>
+    <div class="value money" id="monthMoney">0 ₽</div>
   </div>
 </div>
 
-<!-- ДОБАВЛЕНИЕ СМЕНЫ -->
-<div class="card">
-  <h2>➕ Добавить смену</h2>
-  <label>Дата</label>
-  <input type="date" id="date">
+<!-- Список смен -->
+<div class="shifts-list" id="list"></div>
 
-  <div class="row">
-    <div>
-      <label>Начало</label>
-      <input type="time" id="start" value="14:00">
+<!-- Кнопка добавления -->
+<button class="fab" onclick="openModal()">
+  <span style="font-size:22px">+</span> Добавить смену
+</button>
+
+<!-- Модальное окно -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Новая смена</h2>
+      <button class="close-btn" onclick="closeModal()">Отмена</button>
     </div>
-    <div>
-      <label>Конец</label>
-      <input type="time" id="end" value="22:00">
+    
+    <label>Дата</label>
+    <input type="date" id="date">
+    
+    <div class="row">
+      <div>
+        <label>Начало</label>
+        <input type="time" id="start" value="14:00">
+      </div>
+      <div>
+        <label>Конец</label>
+        <input type="time" id="end" value="22:00">
+      </div>
     </div>
+    
+    <label>Перерыв (минут, вычитается)</label>
+    <input type="number" id="breakMin" value="30" min="0" step="5">
+    
+    <div class="preview" id="preview">В зачёт: —</div>
+    
+    <button class="btn-save" onclick="addShift()">Сохранить смену</button>
   </div>
-
-  <label>Перерыв (минут, вычитается)</label>
-  <input type="number" id="breakMin" value="30" min="0" step="5">
-
-  <div class="hint" id="preview">Итого в зачёт: —</div>
-
-  <button onclick="addShift()">Добавить</button>
-</div>
-
-<!-- ИТОГИ -->
-<div class="card">
-  <div style="display:flex;justify-content:space-between;font-size:16px;margin-bottom:8px">
-    <span>Всего часов:</span>
-    <span class="big" id="totalHours">0</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;font-size:16px">
-    <span>Всего заработано:</span>
-    <span class="big money" id="totalMoney">0 ₽</span>
-  </div>
-  <div id="list"></div>
 </div>
 
 <script>
-const KEY = 'my_schedule_v4';
+const KEY = 'my_schedule_v5';
 const RATE_KEY = 'my_rate';
+const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
 let rate = parseFloat(localStorage.getItem(RATE_KEY)) || 276;
+let currentDate = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear = currentDate.getFullYear();
 
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
 function save(data) { localStorage.setItem(KEY, JSON.stringify(data)); }
-
-function money(mins) {
-  return Math.round((mins / 60) * rate);
-}
-function fmtMoney(v) {
-  return v.toLocaleString('ru-RU') + ' ₽';
-}
-function fmt(mins) {
+function fmtMoney(v) { return v.toLocaleString('ru-RU') + ' ₽'; }
+function fmtHours(mins) {
   const h = Math.floor(mins / 60), m = mins % 60;
   return m ? `${h} ч ${m} мин` : `${h} ч`;
 }
 
-function saveRate() {
-  const v = parseFloat(document.getElementById('rate').value);
-  if (!v || v < 0) { alert('Введите корректную ставку'); return; }
-  rate = v;
-  localStorage.setItem(RATE_KEY, rate);
+function changeRate() {
+  const v = prompt('Введите стоимость 1 часа (в рублях):', rate);
+  if (v !== null && !isNaN(v) && v > 0) {
+    rate = parseFloat(v);
+    localStorage.setItem(RATE_KEY, rate);
+    document.getElementById('rateDisplay').textContent = rate;
+    render();
+  }
+}
+
+function updateMonthTitle() {
+  document.getElementById('monthTitle').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+}
+
+function changeMonth(offset) {
+  currentMonth += offset;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  updateMonthTitle();
   render();
-  updatePreview();
 }
 
 function calcMins() {
@@ -143,8 +221,22 @@ function calcMins() {
 function updatePreview() {
   const r = calcMins();
   const el = document.getElementById('preview');
-  if (!r) { el.textContent = 'Итого в зачёт: —'; return; }
-  el.textContent = `Смена ${fmt(r.gross)} − перерыв → ${fmt(r.net)} · ${fmtMoney(money(r.net))}`;
+  if (!r) { el.textContent = 'В зачёт: —'; return; }
+  el.textContent = `В зачёт: ${fmtHours(r.net)} · ${fmtMoney(Math.round((r.net/60)*rate))}`;
+}
+
+function openModal() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  document.getElementById('date').value = `${y}-${m}-${d}`;
+  document.getElementById('modal').classList.add('active');
+  updatePreview();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
 }
 
 function addShift() {
@@ -160,69 +252,79 @@ function addShift() {
   data.push({ date, start, end, br, mins: r.net });
   data.sort((a,b) => a.date.localeCompare(b.date));
   save(data);
+  
+  // Переключаемся на месяц добавленной смены
+  const [y, m] = date.split('-');
+  currentYear = parseInt(y);
+  currentMonth = parseInt(m) - 1;
+  updateMonthTitle();
+  
+  closeModal();
   render();
 }
 
-function removeShift(i) {
-  const data = load();
-  data.splice(i, 1);
-  save(data);
-  render();
+function removeShift(index) {
+  if (confirm('Удалить эту смену?')) {
+    const data = load();
+    data.splice(index, 1);
+    save(data);
+    render();
+  }
 }
 
 function render() {
   const data = load();
   const list = document.getElementById('list');
-  const totalHoursEl = document.getElementById('totalHours');
-  const totalMoneyEl = document.getElementById('totalMoney');
-
-  document.getElementById('rate').value = rate;
-
-  if (!data.length) {
-    list.innerHTML = '<p style="color:#888;font-size:14px;margin-top:14px">Пока нет смен</p>';
-    totalHoursEl.textContent = '0 ч';
-    totalMoneyEl.textContent = '0 ₽';
+  
+  // Фильтруем по текущему месяцу
+  const prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  const monthShifts = data.map((s, i) => ({ ...s, index: i })).filter(s => s.date.startsWith(prefix));
+  
+  // Считаем итоги
+  const totalMins = monthShifts.reduce((a, s) => a + s.mins, 0);
+  const totalMoney = Math.round((totalMins / 60) * rate);
+  
+  document.getElementById('monthHours').textContent = fmtHours(totalMins);
+  document.getElementById('monthMoney').textContent = fmtMoney(totalMoney);
+  
+  // Рендерим список
+  if (!monthShifts.length) {
+    list.innerHTML = '<div class="empty">В этом месяце пока нет смен</div>';
     return;
   }
-
-  const months = {};
-  data.forEach((s, i) => {
-    const m = s.date.slice(0, 7);
-    (months[m] = months[m] || []).push({ ...s, index: i });
-  });
-
+  
   let html = '';
-  Object.keys(months).sort().forEach(m => {
-    const sumMins = months[m].reduce((a, s) => a + s.mins, 0);
-    const sumMoney = money(sumMins);
-    html += `<div class="month-head">
-      <span>${m} · ${fmt(sumMins)}</span>
-      <span class="money">${fmtMoney(sumMoney)}</span>
+  monthShifts.forEach(s => {
+    const [y, m, d] = s.date.split('-');
+    const money = Math.round((s.mins / 60) * rate);
+    const brText = s.br ? ` · перерыв ${s.br} мин` : '';
+    
+    html += `<div class="shift-item">
+      <div>
+        <div class="shift-date">${d}.${m}</div>
+        <div class="shift-time">${s.start} – ${s.end}${brText}</div>
+      </div>
+      <div class="shift-right">
+        <div class="shift-hours">${fmtHours(s.mins)}</div>
+        <div class="shift-money">${fmtMoney(money)}</div>
+        <button class="del-btn" onclick="removeShift(${s.index})">Удалить</button>
+      </div>
     </div>`;
-    months[m].forEach(s => {
-      const brText = s.br ? ` · перерыв ${s.br} мин` : '';
-      html += `<div class="shift">
-        <span>${s.date.slice(8,10)}.${s.date.slice(5,7)} · ${s.start}–${s.end}<small>${brText.replace(' · ','')}</small></span>
-        <span class="right">
-          ${fmt(s.mins)}<br>
-          <span class="money">${fmtMoney(money(s.mins))}</span><br>
-          <button class="del" onclick="removeShift(${s.index})">✕</button>
-        </span>
-      </div>`;
-    });
   });
-
+  
   list.innerHTML = html;
-  const totalMins = data.reduce((a, s) => a + s.mins, 0);
-  totalHoursEl.textContent = fmt(totalMins);
-  totalMoneyEl.textContent = fmtMoney(money(totalMins));
 }
 
-document.getElementById('date').valueAsDate = new Date();
-['start','end','breakMin'].forEach(id =>
-  document.getElementById(id).addEventListener('input', updatePreview)
-);
-updatePreview();
+// Инициализация
+document.getElementById('rateDisplay').textContent = rate;
+updateMonthTitle();
+['start','end','breakMin'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+
+// Закрытие модалки по клику на фон
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
 render();
 </script>
 </body>
